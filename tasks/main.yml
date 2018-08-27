@@ -1,0 +1,66 @@
+---
+
+- tags: [ wordpress ]
+  become: yes
+  block:
+
+    # boilerplate
+  - name: bootstrap enough that ansible can run most ansible modules
+    include_tasks: "bootstrap/main.yml"
+    when: bootstrap_done is not defined
+    tags: [ bootstrap ]
+
+    # boilerplate
+  - include_tasks: bootstrap/distro-vars-import.yml
+    tags: always
+
+    ## START OF MAIN TASKS SECTION ##
+
+  # this is a general check that mysql module is working...
+  - mysql_variables:
+      variable: sync_binlog
+
+##   __      __          _                      ___ _ _
+##   \ \    / /__ _ _ __| |_ __ _ _ ___ ______ / __(_) |_ ___ ___
+##    \ \/\/ / _ \ '_/ _` | '_ \ '_/ -_|_-<_-< \__ \ |  _/ -_|_-<
+##     \_/\_/\___/_| \__,_| .__/_| \___/__/__/ |___/_|\__\___/__/
+##                        |_|
+
+  # if sites was provided as a list, loop over the instances
+  - include_tasks: install/wp-create-site.yml
+    loop_control:
+      loop_var: wp_site_local
+    with_items: "{{ wp_sites }}"
+
+  # if just the wp_site var was defined, use that instead...
+  - set_fact:
+      wp_site_local: "{{ wp_site }}"
+    when: wp_site is defined
+
+  - include_tasks: install/wp-create-site.yml
+    when: wp_site is defined
+    tags: always
+
+    ## END OF MAIN TASKS SECTION ##
+
+  always:
+    - name: create the var cache directory
+      file:
+        name: "/var/cache/ansible/attributes"
+        state: directory
+      tags: always
+
+    - name: write out the hostvars to json for inspec testing
+      copy:
+        content: "{{ hostvars[inventory_hostname] | to_nice_json }}"
+        dest: "/var/cache/ansible/attributes/hostvars.json"
+      tags: always
+
+  # boilerplate
+  # the idea here, is that if any of the tasks fail, it will add useful
+  # troubleshooing tools to the build.
+  rescue:
+  - include_tasks: bootstrap/distro-debug-packages.yml
+
+  - fail:
+      msg: "force a failure due to previous errors"

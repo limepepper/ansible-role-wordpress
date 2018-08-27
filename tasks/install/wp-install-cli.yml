@@ -1,0 +1,48 @@
+---
+
+
+#                              _ _
+#   __      ___ __         ___| (_)
+#   \ \ /\ / / '_ \ _____ / __| | |
+#    \ V  V /| |_) |_____| (__| | |
+#     \_/\_/ | .__/       \___|_|_|
+#            |_|
+
+
+- name: Download WordPress-cli
+  get_url:  url=https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar  validate_certs=no dest=/opt/wp-cli.phar
+
+- file: path=/opt/wp-cli.phar owner=root group=root mode=0755
+- file: src=/opt/wp-cli.phar dest=/usr/local/bin/wp owner=root group=root state=link
+
+
+
+- name: "install wordpress => {{ web_docroot }}"
+  shell: |
+    if [ -d "{{ web_docroot }}" ]; then
+      cd "{{ web_docroot }}"
+      if [ ! -d "{{ web_docroot }}/wp-admin" ]; then
+        echo Downloading core
+        /usr/local/bin/wp core download  --allow-root
+      fi
+
+      # try that again...
+      if [ -d "{{ web_docroot }}/wp-admin" ]; then
+        if /usr/local/bin/wp core is-installed --allow-root ; then
+          echo "core is-installed ALREADY";
+        else
+          /usr/local/bin/wp core install --url={{ wp_hostname }} --title="{{ wp_title |default( wp_hostname)  }} Wordpress" --admin_user=supervisor --admin_password=stroccsngpadssword --admin_email=info@example.com --allow-root
+        fi
+      fi
+    fi
+  # args:
+  #   chdir: /var/www/
+  register: stdout
+
+- name: debug output
+  debug: msg={{ stdout }}
+#curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+
+#wp core install --url=example.com --title=Example --admin_user=supervisor --admin_password=strongpassword --admin_email=info@example.com
+
+

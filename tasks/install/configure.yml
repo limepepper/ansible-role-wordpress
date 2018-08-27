@@ -1,0 +1,12 @@
+---
+
+- name: "install plugins"
+  shell: |
+    /usr/local/bin/wp plugin install {{ wp_site_plugin }} --path="{{ web_docroot }}"  --allow-root
+    /usr/local/bin/wp plugin activate {{ wp_site_plugin }} --path="{{ web_docroot }}"  --allow-root
+  with_items: "{{ wp_site_local.plugins }}"
+  loop_control:
+    loop_var: wp_site_plugin
+  when:  wp_site_local.plugins is defined and wp_site_local.plugins
+  register: wp_plugins_install
+  changed_when: '"Success: Plugin already installed." not in wp_plugins_install.stdout'

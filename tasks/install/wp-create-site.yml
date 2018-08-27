@@ -1,0 +1,119 @@
+---
+
+- tags: [ wordpress, wordpress-apache ]
+  become: yes
+  block:
+
+  # currently we are not supporting having different wp_home and wp_siteurl
+  - set_fact:
+      wp_home: "{{ wp_site_local.url }}"
+      wp_siteurl: "{{ wp_site_local.url }}"
+
+  - set_fact:
+      url_parsed: "{{ wp_site_local.url | parse_url }}"
+
+  - set_fact:
+      wp_site_safe: "{{ url_parsed.hostname | lower | replace('.','_') |replace('-','_') |replace('@','_') | truncate(24, True, '') }}"
+
+  - set_fact:
+      wp_db_pass: "{{ wp_site_local.wp_db_pass | default( lookup('password', '~/ansible/store/wordpress/wp_db_pass chars=ascii_lowercase,ascii_uppercase,digits,#=+_-*^$') ) }}"
+
+  - set_fact:
+      wp_db_user: "{{ wp_site_local.wp_db_user | default( wp_site_safe ) }}"
+
+  - set_fact:
+      wp_db_name: "{{ wp_site_local.wp_db_name | default( wp_site_safe ) }}"
+
+  - set_fact:
+      web_docroot: '{{ wp_site_local.web_docroot | default( "/var/www/"+wp_site_safe ) }}'
+
+
+  - set_fact:
+      wp_hostname: "{% if wp_host_override is defined %}{{ wp_host_override }}{% else %}{{ url_parsed.hostname }}{% endif %}{% if wp_port_override is defined %}:{{ wp_port_override }}{% endif %}"
+
+  - set_fact:
+      web_servername: "{{ url_parsed.hostname }}"
+
+  - set_fact:
+      web_serveraliases: [ "www.{{ web_servername }}", "{{ ansible_hostname }}.testing.{{ web_servername }}" ]
+      webserver_user: "{{ wp_site_local.webserver_user | default( webserver_user ) }}"
+      webserver_group: "{{ wp_site_local.webserver_group | default( webserver_group ) }}"
+      configure_apache: "{{ wp_site_local.configure_apache | default( True ) }}"
+
+
+
+  - name: create a list of dict of attributes which are used in testing
+    set_fact:
+      wp_sites_local: "{{ ( wp_sites_local | default([]) ) + [ wp_site_local|combine({'wp_site_safe': wp_site_safe, 'hostname': url_parsed.hostname, 'url_parsed': url_parsed, 'web_docroot': web_docroot, 'web_servername': web_servername, 'webserver_user': webserver_user, 'webserver_group': webserver_group, 'configure_apache': configure_apache }) ] }}"
+
+  #     ____             __ _         __  __       ____   ___  _
+  #    / ___|___  _ __  / _(_) __ _  |  \/  |_   _/ ___| / _ \| |
+  #   | |   / _ \| '_ \| |_| |/ _` | | |\/| | | | \___ \| | | | |
+  #   | |__| (_) | | | |  _| | (_| | | |  | | |_| |___) | |_| | |___
+  #    \____\___/|_| |_|_| |_|\__, | |_|  |_|\__, |____/ \__\_\_____|
+  #                           |___/          |___/
+
+  - name: "configure MySQL for {{ wp_site_local.site }}"
+    include_tasks: "wp-configure-mysql.yml"
+
+  - name: Creates "{{ web_docroot }}" directory
+    file:
+      path: "{{ web_docroot }}"
+      state: directory
+      owner: "{{ webserver_user }}"
+      group: "{{ webserver_group }}"
+
+  # maybe add a parameter for enabling rewriting??
+  # doing this with a template as selinux prevents httpd writing
+  - name: htaccess template
+    template:
+      src: dothtaccess.j2
+      dest: "{{ web_docroot }}/.htaccess"
+      owner: root
+      group: root
+      mode: 0644
+
+  # the installer seems to need the wp-config.php template to exist...
+  - name: wp-config.php template
+    template:
+      src: wp-config.php.j2
+      dest: "{{ web_docroot }}/wp-config.php"
+      owner: root
+      group: root
+      mode: 0644
+    become: true
+
+  #    ___           _        _ _  __        ______
+  #   |_ _|_ __  ___| |_ __ _| | | \ \      / /  _ \
+  #    | || '_ \/ __| __/ _` | | |  \ \ /\ / /| |_) |
+  #    | || | | \__ \ || (_| | | |   \ V  V / |  __/
+  #   |___|_| |_|___/\__\__,_|_|_|    \_/\_/  |_|
+  #
+
+  - name: "install {{ wp_site_local.site }} wordpress by {{ wp_strategy_install }}"
+    include_tasks: "wp-install-{{ wp_strategy_install }}.yml"
+    vars:
+      site: "{{ wp_hostname }}"
+
+  - name: configure wordpress
+    include_tasks: configure.yml
+
+
+  - name: configure apache virtualhost for wordpress
+    include_tasks: ../apache/main.yml
+    when: configure_apache
+
+  - debug:
+      var: write_hosts_file
+
+  - name: add items to hosts file if we are in dev mode
+    delegate_to: 127.0.0.1
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '{{ url_parsed.hostname }}$'
+      line: "{{ ansible_default_ipv4.address }} {{ url_parsed.hostname }}"
+      state: present
+    when: "write_hosts_file is defined"
+
+  # - fail:
+  #     msg: "{{ ansible_default_ipv4.address }} {{ url_parsed.hostname }}"
