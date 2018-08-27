@@ -1,6 +1,7 @@
 ---
 
 galaxy_info:
+  role_name: wordpress
   author: Tom Hodder
   description: Install and configure wordpress
   company: Lime Pepper Ltd
