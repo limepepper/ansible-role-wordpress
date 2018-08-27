@@ -1,0 +1,36 @@
+---
+
+galaxy_info:
+  author: Tom Hodder
+  description: Install and configure wordpress
+  company: Lime Pepper Ltd
+
+  # issue_tracker_url: http://example.com/issue/tracker
+
+  license: license (MIT)
+
+  min_ansible_version: 2.5
+
+  # min_ansible_container_version:
+  # github_branch:
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - 16.04
+  #   - 25
+  # - name: SomePlatform
+  #   versions:
+  #   - all
+  #   - 1.0
+  #   - 7
+  #   - 99.99
+
+  galaxy_tags:
+    - web
+    - php
+    - wordpress
+    - cms
+    - hosting
+
+dependencies: []
