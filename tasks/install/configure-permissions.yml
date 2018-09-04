@@ -1,0 +1,46 @@
+---
+
+
+#    _ __   ___ _ __ _ __ ___  ___
+#   | '_ \ / _ \ '__| '_ ` _ \/ __|
+#   | |_) |  __/ |  | | | | | \__ \
+#   | .__/ \___|_|  |_| |_| |_|___/
+#   |_|
+
+# need to fix perms to stuff to give access to apache user
+
+- assert:
+    that:
+      - web_docroot is defined
+      - web_docroot != ''
+    msg: "web doc root must exist value: {{ web_docroot }}"
+
+- assert:
+    that:
+      - webserver_user is defined
+      - webserver_user != ''
+    msg: "apache_user must exist value: {{ webserver_user }}"
+
+- file:
+    path: "{{ web_docroot }}"
+    state: directory
+    recurse: true
+    owner: "{{ webserver_user }}"
+    group: root
+
+- name: "make dirs 0755 on {{ web_docroot }}  /  {{ wp_site_local.site }}"
+  command: find "{{ web_docroot }}" -type d ! -perm 0755 -exec chmod 0755 {} \;
+
+- name: make files 0644
+  command: find "{{ web_docroot }}" -type f ! -perm 0644 -exec chmod 0644 {} \;
+
+
+  # - name: Make my directory tree readable
+  # file:
+  #   path: dir
+  #   mode: u=rwX,g=rX,o=rX
+  #   recurse: yes
+
+#   chown www-data:www-data  -R * # Let Apache be owner
+# find . -type d -exec chmod 755 {} \;  # Change directory permissions rwxr-xr-x
+# find . -type f -exec chmod 644 {} \;  # Change file permissions rw-r--r--

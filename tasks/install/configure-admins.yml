@@ -1,0 +1,18 @@
+---
+
+
+
+
+
+# $PATH is "/sbin:/bin:/usr/sbin:/usr/bin" on CentOS-7
+- name: "configure the supervisor"
+  shell: |
+    echo /usr/local/bin/wp user update 1  --user_pass="{{
+
+            lookup('password',
+        '~/ansible/store/wp_supervisor/wordpress/wp_super_pass chars=ascii_letters')
+
+            }}" --path="{{ web_docroot }}" --allow-root
+
+    /usr/local/bin/wp user update 1  --user_pass="{{ lookup('password',
+    '~/ansible/store/wp_supervisor/wordpress/wp_super_pass chars=ascii_letters') }}" --path="{{ web_docroot }}" --allow-root --skip-email

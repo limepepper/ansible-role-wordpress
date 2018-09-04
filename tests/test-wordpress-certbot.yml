@@ -1,0 +1,227 @@
+---
+
+- hosts: all
+  become: yes
+
+  # if the distro doesn't ship with python
+  # this shims it in before fact gathering
+  gather_facts: false
+  pre_tasks:
+  - name: Install python2 for Ansible
+    raw: sh -c "test -e /usr/bin/python || ( ( test -e /usr/bin/apt && apt -qqy update && apt install -qqy python-minimal) || ( test -e /usr/bin/dnf && /usr/bin/dnf -qy install python) || ( test -e /usr/bin/yum && /usr/bin/yum -qy install python) )"
+    register: output
+    changed_when: 'output.stdout|trim() != ""'
+    tags: always
+  - name: Gathering Facts
+    setup:
+    tags: always
+  # end of python shim
+
+  tasks:
+
+    - block:
+        - name: set the basic values for this situation
+          set_fact:
+            # causes the use of letsencrypt staging system
+            certbot_tests_staging: yes
+            # used for dns api operations
+            certbot_test_zone: testing.limepepper.co.uk
+          tags: always
+
+        - name: another block with values that depend on the previous
+          set_fact:
+            # generate the fqdn that we will use on going
+            certbot_test_domain: "{{ ansible_hostname }}.{{ certbot_test_zone }}"
+            # used for alt SANs in x509 and apache ServerAlias
+            certbot_test_alternatives:
+              - "www.{{ ansible_hostname }}.{{ certbot_test_zone }}"
+          tags: always
+
+        - name: limit the length of the doc root
+          set_fact:
+            # hard code the doc root for www and certbot webroot
+            certbot_test_doc_root: /var/www/{{ certbot_test_domain | truncate(32, True,"") }}
+          tags: always
+
+        - name: setup vars for apache to install the correct options
+          set_fact:
+            apache_opts:
+              - php/mod_php
+              - ssl/mod_ssl
+              - rewrite
+          tags: always
+            # apache_suite: rh-php56
+
+        - import_role:
+            # set mysql_profile to control mysql flavor and version
+            name: limepepper.mysql
+
+        - import_role:
+            # set apache_profile to override default packages
+            name: limepepper.apache
+
+        - import_role:
+            # this installs the package and common plugins
+            name: limepepper.certbot
+
+        - include_tasks: setup-digitalocean-www-records.yml
+          tags: always
+
+        - name: create the test http home dir directory
+          file:
+            name: "{{ certbot_test_doc_root }}"
+            state: directory
+          tags: [apache, ssl, wordpress, certbot]
+
+        - name: create a dummy file that we can call from a test
+          copy:
+            content: |
+              <html><body><h2>This is a test page YYY</h2></body></html>
+            dest: "{{ certbot_test_doc_root }}/index.htm"
+          notify:
+            - reload apache
+          tags: [apache, ssl]
+
+        - name: add a port 80 http vhost for certbot/letsencrypt to connect to
+          apache_vhost:
+            ServerName: "{{ certbot_test_domain }}"
+            ServerAliases: "{{ certbot_test_alternatives }}"
+            # using default document root, generated off domain name
+            DocumentRoot: "{{ certbot_test_doc_root }}"
+            # need an immediate update, as certbot needs the webserver
+            # force_immediate_update: yes
+          register: vhost_template_conf
+          tags: [apache, ssl]
+
+        - name: guard against trying to restart with broken config
+          shell: "{{ apache_conftest }} || true"
+          tags: [apache, ssl]
+          register: conftest_check
+          changed_when: "'failed' in conftest_check.stdout"
+
+        - fail:
+            msg:  |
+              output of things
+              vhost_template_conf: {{ vhost_template_conf }}
+              conftest_check: {{ conftest_check }}
+          when: "'failed' in conftest_check.stdout"
+
+        - name: forcing restart of apache for this vhost
+          service:
+            name: "{{ apache_service }}"
+            state: restarted
+          when:
+            - vhost_template_conf.changed
+            - "'failed' not in conftest_check.stdout"
+          tags: [apache, ssl]
+
+        - name: Wait 10 seconds for http to respond on port 80
+          wait_for:
+            port: 80
+            timeout: 10
+            # search_regex: 200 OK
+            delay: 1
+          when:
+            - vhost_template_conf.changed
+            - "'failed' not in conftest_check.stdout"
+          tags: [apache]
+
+        - name: "request the cert for {{ certbot_test_domain }}"
+          certbot:
+            domain: "{{ certbot_test_domain }}"
+            alternatives: "{{ certbot_test_alternatives }}"
+            plugin: webroot
+            email: certbot-dev@limepepper.co.uk
+            document_root: "{{ certbot_test_doc_root }}"
+            staging: "{{ certbot_tests_staging }}"
+            # auto_renew_http: yes
+            force: no
+            # debug: yes
+          tags: [docert, ssl, certbot]
+
+        - name: add a https vhost for testing
+          apache_vhost_ssl:
+            ServerName: "{{ certbot_test_domain }}"
+            ServerAliases: "{{ certbot_test_alternatives }}"
+            DocumentRoot: "{{ certbot_test_doc_root }}"
+            # DocumentRoot: /var/www/mywordpresssite2.com
+            SSLCertificateKeyFile: /etc/letsencrypt/live/{{ certbot_test_domain }}/privkey.pem
+            SSLCertificateFile: /etc/letsencrypt/live/{{ certbot_test_domain }}/cert.pem
+            SSLCertificateChainFile: /etc/letsencrypt/live/{{ certbot_test_domain }}/chain.pem
+          tags: [apache, ssl]
+          notify:
+            - reload apache
+
+
+  # - name: install wordpress (biohackspace)
+  #   include_role:
+  #     name: limepepper.wordpress
+  #   vars:
+  #     wp_site:
+  #       web_docroot: /var/www/www.biohackspace.org/html
+  #       url: https://biohackspace.org
+  #       wp_db_name: db140953_biohackspace
+  #       wp_db_pass: Olm7HHtd
+  #       wp_db_user: 1clk_wp_vZ8hbp1
+  #       webserver_user: root
+  #       plugins:
+  #         - check-email
+  #       configure_apache: false
+  #   tags: always
+
+        - name: import the wordpress role
+          import_role:
+            name: '{{playbook_dir}}/..'
+          vars:
+            wp_site:
+              url: "https://{{ certbot_test_domain }}"
+              theme: just-pink
+              web_docroot: "{{ certbot_test_doc_root }}"
+              themes:
+                - sleeky
+                - bulk
+
+      always:
+        - name: create the var cache directory
+          file:
+            name: "/var/cache/ansible/attributes"
+            state: directory
+          tags: always
+
+        - name: write out the hostvars to json for inspec testing
+          copy:
+            content: "{{ hostvars[inventory_hostname] | strip_fieldattributes | to_nice_json }}"
+            dest: "/var/cache/ansible/attributes/hostvars.json"
+          changed_when: false
+          tags: always
+
+      # the idea here, is that if any of the tasks fail, it will add useful
+      # troubleshooing tools to the build.
+      rescue:
+
+        - name: '{{playbook_dir}}/..'
+          include_tasks: ../tasks/bootstrap/distro-debug-packages.yml
+          tags: always
+
+        - name: "Show debugging info for failed node {{ inventory_hostname }}"
+          debug:
+            msg: |
+                  Hostname: {{ ansible_hostname }}
+                  ansible version: {{ ansible_version.major }}.{{ ansible_version.minor }}.{{ ansible_version.revision }}
+                  Fqdn: {{ ansible_fqdn }}
+                  Inventory Hostname {{ inventory_hostname }}
+
+                  Distribution is {{ ansible_distribution }}-{{ ansible_distribution_major_version }}
+                  Specific version is {{ ansible_distribution_version }}
+                  OS family is {{ ansible_os_family }}
+                  Release: {{ ansible_distribution_release }}
+                  Ansible python version: {{ ansible_python_version }}
+
+                  Network
+                  #######
+
+                  default ipv4: {% if ansible_default_ipv4 is defined and 'address' in ansible_default_ipv4 %}{{ ansible_default_ipv4.address }}{% else %}<undefined>{% endif %}
+
+                  default ipv6: {% if ansible_default_ipv6 is defined and 'address' in ansible_default_ipv6 %}{{ ansible_default_ipv6.address }}{% else %}<undefined>{% endif %}
+
+          tags: always

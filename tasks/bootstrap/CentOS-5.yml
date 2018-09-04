@@ -1,0 +1,42 @@
+---
+
+# This was an attempt to get CentOS-5 running, its not working anymore
+# mostly the packages are not available in the public repos and similar issues
+
+- name: Install python2 for Ansible
+  raw: |
+    yum install -y epel-release
+  register: output
+  changed_when: 'output.stdout|trim() != ""'
+
+- name: Install python2 for Ansible
+  raw: |
+    yum install -y python-simplejson libselinux-python python26-devel
+  register: output
+  changed_when: 'output.stdout|trim() != ""'
+
+- name: mirrorlists for centos 5 vault
+  template:
+    src: templates/{{ item }}/mirrorlist.txt
+    dest: /var/cache/yum/{{ item }}/mirrorlist.txt
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - base
+    - extras
+    - updates
+
+- name: install shim packages
+  package:
+    name:
+      - libselinux-python
+      - selinux-policy
+      - python-pip
+      - unzip
+      - git
+      - curl
+
+- selinux:
+    policy: targeted
+    state: permissive

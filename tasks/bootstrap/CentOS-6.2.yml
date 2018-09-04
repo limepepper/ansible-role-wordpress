@@ -1,0 +1,34 @@
+---
+
+- tags: main-run
+  become: true
+  block:
+
+  - debug:
+      msg: |
+        This is largely unmaintained, and should be used at your own risk
+
+  - name: install epel
+    package:
+      name:
+        - epel-release
+
+  - name: fix http for early centos
+    shell: |
+      sed -i "s/mirrorlist=https/mirrorlist=http/" /etc/yum.repos.d/epel.repo
+
+  - name: install shim packages
+    package:
+      name:
+        - libselinux-python
+        - selinux-policy
+        - python-pip
+        - unzip
+        - git
+        - lsof
+        - net-tools
+        - curl
+
+  - selinux:
+      policy: targeted
+      state: permissive

@@ -1,0 +1,20 @@
+
+#                              _
+#    _ __ ___  _   _ ___  __ _| |
+#   | '_ ` _ \| | | / __|/ _` | |
+#   | | | | | | |_| \__ \ (_| | |
+#   |_| |_| |_|\__, |___/\__, |_|
+#              |___/        |_|
+
+- name: Create a new database with name '{{ wp_db_name }}'
+  mysql_db:
+    name: "{{ wp_db_name }}"
+    state: present
+
+- mysql_user:
+    name: "{{ wp_db_user }}"
+    password: "{{ wp_db_pass }}"
+    encrypted: no
+    host: localhost
+    priv: "{{ wp_db_name }}.*:ALL"
+    state: present

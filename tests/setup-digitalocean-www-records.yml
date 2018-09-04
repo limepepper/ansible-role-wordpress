@@ -1,0 +1,34 @@
+---
+
+        - name: create digital ocean domain for testing
+          become: false
+          local_action:
+            module: digital_ocean_domain
+            state: present
+            name: "{{ certbot_test_zone }}"
+            ip: 127.0.0.1
+          register: testing_domain
+          tags: dozone
+
+        - name: Create A record for test machine
+          become: false
+          local_action:
+            module: digital_ocean_domain_record
+            domain: "{{ certbot_test_zone }}"
+            name: "{{ ansible_hostname }}"
+            type: A
+            force_update: yes
+            data: "{{ ansible_default_ipv4.address }}"
+          tags: dozone
+
+        - name: Create A record for test machine alts
+          become: false
+          local_action:
+            module: digital_ocean_domain_record
+            domain: "{{ certbot_test_zone }}"
+            name: "www.{{ ansible_hostname }}"
+            type: A
+            force_update: yes
+            data: "{{ ansible_default_ipv4.address }}"
+          # with_items: "{{ certbot_test_alternatives }}"
+          tags: dozone

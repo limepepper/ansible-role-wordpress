@@ -5,26 +5,33 @@
   block:
 
   # currently we are not supporting having different wp_home and wp_siteurl
-  - set_fact:
+  - name: set the wp_home and wp_siteur
+    set_fact:
       wp_home: "{{ wp_site_local.url }}"
       wp_siteurl: "{{ wp_site_local.url }}"
 
-  - set_fact:
+  - name: parse the url into parts for use later
+    set_fact:
       url_parsed: "{{ wp_site_local.url | parse_url }}"
 
-  - set_fact:
+  - name: make a downcase, no special characters string to use
+    set_fact:
       wp_site_safe: "{{ url_parsed.hostname | lower | replace('.','_') |replace('-','_') |replace('@','_') | truncate(24, True, '') }}"
 
-  - set_fact:
+  - name: get or set a wp db user password
+    set_fact:
       wp_db_pass: "{{ wp_site_local.wp_db_pass | default( lookup('password', '~/ansible/store/wordpress/wp_db_pass chars=ascii_lowercase,ascii_uppercase,digits,#=+_-*^$') ) }}"
 
-  - set_fact:
-      wp_db_user: "{{ wp_site_local.wp_db_user | default( wp_site_safe ) }}"
+  - name: set the db usert
+    set_fact:
+      wp_db_user: "{{ wp_site_local.wp_db_user | default( wp_site_safe[:16] ) }}"
 
-  - set_fact:
+  - name: set the database name from the site url
+    set_fact:
       wp_db_name: "{{ wp_site_local.wp_db_name | default( wp_site_safe ) }}"
 
-  - set_fact:
+  - name: set the doc root used by the wp installation
+    set_fact:
       web_docroot: '{{ wp_site_local.web_docroot | default( "/var/www/"+wp_site_safe ) }}'
 
 
@@ -99,9 +106,9 @@
     include_tasks: configure.yml
 
 
-  - name: configure apache virtualhost for wordpress
-    include_tasks: ../apache/main.yml
-    when: configure_apache
+  # - name: configure apache virtualhost for wordpress
+  #   include_tasks: ../apache/main.yml
+  #   when: configure_apache
 
   - debug:
       var: write_hosts_file
