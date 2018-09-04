@@ -1,0 +1,79 @@
+---
+
+driver:
+  name: digitalocean
+  size: s-2vcpu-4gb
+  private_networking: false
+  region: lon1
+  tags: do_test_pool
+  firewalls: <%= ENV['DO_FIREWALL_ID'] %>,<%= ENV['DO_FIREWALL_ID2'] %>
+
+transport:
+  ssh_key: ~/.ssh/id_rsa.do-buildbot
+
+platforms:
+  #- name: debian-8
+  - name: debian-9
+  #- name: ubuntu-14
+  - name: ubuntu-16
+  - name: ubuntu-18
+  - name: centos-7
+  - name: centos-6
+    provisioner:
+      extra_vars:
+        apache_profile: rh-php70
+  - name: fedora-28
+
+# kitchen-inspec expects test to be in test/integration/%suite%/inspec
+# verifier:
+#   name: inspec
+#   # format: junit
+#   # output: path/to/results/%{platform}_%{suite}_inspec.xml
+#   inspec_tests:
+#     #- tests/inspec/default
+#     - name: test-wordpress
+#       path: tests/inspec/default
+
+suites:
+  - name: default
+    provisioner:
+      show_command_output: true
+      extra_vars:
+        webserver_options:
+          - mod-php
+          - virtualhost
+        tk_dep_roles:
+          - limepepper.mysql
+          - limepepper.apache
+        wp_site:
+          url: http://mywordpressblog.com
+          theme: just-pink
+        wp_sites:
+          - url: http://mywordpressblog1.com
+            theme: auckland
+          # - url: http://mywordpressblog2.com
+          #   theme: precious-lite
+          # - url: http://mywordpressblog3.com
+          #   theme: tiny-framework
+          # - url: http://mywordpressblog4.com/some_sub_dir
+          #  theme: just-pink
+          - url: http://mywordpressblog5.com
+            theme: unik
+            plugins:
+              - dark-mode
+
+          # - url: http://mywordpressblog5.com/some_sub_dir
+          #   install_path:
+  - name: wordpress-certbot
+    provisioner:
+      playbook: tests/test-wordpress-certbot.yml
+      extra_vars:
+        eeeee1: test
+    verifier:
+      inspec_tests:
+        - ../limepepper.apache/test/integration/default
+        - ../limepepper.mysql/test/integration/default
+        - ../limepepper.mysql/test/integration/localhost/localchecks_inspec.rb
+        - ../limepepper.certbot/test/integration/default
+        - ../limepepper.certbot/test/integration/certchecks
+        - ../limepepper.certbot/test/integration/plugin-webroot

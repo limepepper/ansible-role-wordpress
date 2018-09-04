@@ -1,0 +1,133 @@
+---
+
+driver:
+  name: vagrant
+  network:
+    - ["private_network", { type: "dhcp" }]
+  cachier: ":machine"
+  vagrantfiles:
+    - vagrant/vagrant.rb
+  vagrantfile_erb: vagrant/Vagrantfile.erb
+  var_suffix: testbox
+
+transport:
+  max_ssh_sessions: 5
+
+provisioner:
+  name: ansible_push
+  playbook: tests/test.yml
+  chef_bootstrap_url: nil
+  # ansible_config      : "/path/to/ansible/ansible.cfg"
+  verbose: "<%= ENV.key?('ANSIBLE_Vs') ? ENV['ANSIBLE_Vs'] : 'vv' %>"
+  tags: <%= ENV['ANSIBLE_TAGS'] %>
+  skip_tags: <%= ENV['ANSIBLE_SKIP_TAGS'] %>
+  extra_vars:
+    ara_enabled: true
+
+platforms:
+  - name: ubuntu-17.10
+  - name: ubuntu-16.04
+  - name: ubuntu-14.04
+  - name: centos-7
+  - name: centos-6
+  # - name: fedora-26
+  - name: fedora-27
+  # - name: oracle-5.11
+  # - name: oracle-7.4
+  # - name: oracle-6.9
+  - name: debian-8
+  - name: debian-9
+
+# kitchen-inspec expects test to be in test/integration/%suite%/inspec
+verifier:
+  name: inspec
+  # why are they setting inspec sude true???
+  # sudo: true
+  # format: junit
+  # format: json
+  # output: reports/limepepper.foreman/%{platform}_%{suite}_inspec.json
+  # format: progress
+  # inspec_tests:
+    # - tests/inspec/default
+    # - name: test-wordpress
+    #   path: tests/inspec/default
+    # - path: ../limepepper.mysql/tests/integration/inspec
+  attributes:
+    skiplist:
+      - mysql-skip-this
+
+suites:
+  - name: default
+    provisioner:
+      extra_vars:
+        test_site: role-wordpress11
+        enviro: dev
+        test_suite: default
+    driver:
+      test_site:
+        - role-wordpress11
+      hostmanager:
+        alias_suffix: .testbox
+        aliases:
+          - role-wordpress11
+    verifier:
+      attributes:
+        skiplist:
+          - mysql-baseline
+
+  - name: 3xSites
+    provisioner:
+      ansible_extra_flags: "<%= ENV['EXTRA_TAGS'] %>"
+      extra_vars:
+        wp_sites:
+          - site_subdomain: wordpress1
+            theme: aquaparallax
+            site_tld: testbox
+          # - site: this.is.a.fqdn.tld
+          #   should_fail: true
+          - { site_subdomain: wordpress2, theme: just-pink, site_tld: testbox }
+          - site_subdomain: wordpress3
+            plugins:
+              - disable-comments
+              - recaptcha-in-wp-comments-form
+              - woocommerce
+            site_tld: testbox
+          - site_subdomain: multisite
+            multisite: true
+            plugins:
+              - disable-comments
+              - recaptcha-in-wp-comments-form
+              - woocommerce
+            themes:
+              - surya-chandra-lite
+              - insurance-hub
+              - blue-monday
+              - vw-lawyer-attorney
+              - foundation-lite
+              - holland
+              - dollah
+              - pet-animal-store
+              - marinate
+              - elemental
+            site_tld: 172.28.128.3.nip.io
+        enviro: dev
+    driver:
+      hostmanager:
+        alias_suffix: .testbox
+        aliases:
+          - wordpress1
+          - wordpress2
+          - wordpress3
+    verifier:
+      attributes:
+        url_endpoints:
+          - site: http://wordpress3.3xsites-ubuntu-1604.testbox/
+            string: This is your first post. Edit or delete it, then start writing
+          - site: http://wordpress3.3xsites-ubuntu-1604.testbox/comments/feed/
+            string: Comment on Hello world!
+          - site: http://wordpress3.3xsites-ubuntu-1604.testbox/sample-page/
+            string: This is an example page
+
+# kitchen ansible gets its rubys from here on centos
+# baseurl=http://mirror.centos.org/centos/6/sclo/$basearch/sclo/
+# https://wiki.centos.org/SpecialInterestGroup/SCLo/CollectionsList

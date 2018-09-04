@@ -1,0 +1,70 @@
+<?php
+/**
+THIS FILE IS MANAGED BY ANSIBLE. DON'T!
+ */
+
+# various combinations here control wp self updating
+#define( 'AUTOMATIC_UPDATER_DISABLED', true );
+# Disables all core updates:
+#define( 'WP_AUTO_UPDATE_CORE', false );
+# Enables all core updates, including minor and major:
+#define( 'WP_AUTO_UPDATE_CORE', true );
+# Enables minor updates:
+#define( 'WP_AUTO_UPDATE_CORE', 'minor' );
+
+
+define('WP_HOME','{{ wp_home }}');
+define('WP_SITEURL','{{ wp_siteurl }}');
+
+define('DB_NAME', '{{ wp_db_name }}');
+define('DB_USER', '{{ wp_db_user }}');
+define('DB_PASSWORD', '{{ wp_db_pass }}');
+define('DB_HOST', '{{ wp_db_host }}');
+
+define('DB_CHARSET', 'utf8');
+define('DB_COLLATE', '');
+
+/**#@+
+ * Authentication Unique Keys and Salts.
+ *
+ * Change these to different unique phrases!
+ * You can generate these using the {@link https://api.wordpress.org/secret-key/1.1/salt/ WordPress.org secret-key service}
+ * You can change these at any point in time to invalidate all existing cookies. This will force all users to have to log in again.
+ *
+ * @since 2.6.0
+ */
+define('AUTH_KEY',         '{{ lookup('password',
+    '~/ansible/store/wp/AUTH_KEY length=64 chars=ascii_letters,digits,#@^$:;/~') }}');
+define('SECURE_AUTH_KEY',  '{{ lookup('password',
+    '~/ansible/store/wp/SECURE_AUTH_KEY length=64 chars=ascii_letters,digits,#@^$:;/~') }}');
+define('LOGGED_IN_KEY',    '{{ lookup('password',
+    '~/ansible/store/wp/LOGGED_IN_KEY length=64 chars=ascii_letters,digits,#@^$:;/~') }}');
+define('NONCE_KEY',        '{{ lookup('password',
+    '~/ansible/store/wp/NONCE_KEY length=64 chars=ascii_letters,digits,#@^$:;/~') }}');
+define('AUTH_SALT',        '{{ lookup('password',
+    '~/ansible/store/wp/AUTH_SALT length=64 chars=ascii_letters,digits,#@^$:;/~') }}');
+define('SECURE_AUTH_SALT', '{{ lookup('password',
+    '~/ansible/store/wp/SECURE_AUTH_SALT length=64 chars=ascii_letters,digits,#@^$:;/~') }}');
+define('LOGGED_IN_SALT',   '{{ lookup('password',
+    '~/ansible/store/wp/LOGGED_IN_SALT length=64 chars=ascii_letters,digits,#@^$:;/~') }}');
+define('NONCE_SALT',       '{{ lookup('password',
+    '~/ansible/store/wp/NONCE_SALT length=64 chars=ascii_letters,digits,#@^$:;/~') }}');
+
+/**#@-*/
+
+$table_prefix  = 'wp_';
+
+define('WPLANG', '');
+define('WP_DEBUG', false);
+define('WP_ALLOW_MULTISITE', false );
+
+/* That's all, stop editing! Happy blogging. */
+
+/** Absolute path to the WordPress directory. */
+if ( !defined('ABSPATH') )
+        define('ABSPATH', dirname(__FILE__) . '/');
+
+/** Sets up WordPress vars and included files. */
+require_once(ABSPATH . 'wp-settings.php');
+
+
