@@ -19,6 +19,9 @@
   tasks:
 
     - block:
+        - debug:
+            var: tk_dep_roles
+
         - name: include any roles that are specified in the test-kitchen suite
           include_role:
             name: "{{ tk_dep_roles_item }}"
