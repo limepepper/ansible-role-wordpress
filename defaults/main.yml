@@ -1,0 +1,23 @@
+---
+
+# wp_plugins: []
+# wp_strategy_webserver: apache
+# wp_strategy_install: cli
+# wp_db_host: localhost
+
+wp_install_mysql: true
+
+wp_cli: /usr/local/bin/wp
+wp_cli_phar: /opt/wp-cli.phar
+wp_cli_phar_url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+
+wp_defaults_main_processed: true
+
+wp_debug_on: true
+
+wp_sites: []
+
+# this is used by test kitchen to import and dependent roles
+tk_dep_roles: []
+
+enviro:

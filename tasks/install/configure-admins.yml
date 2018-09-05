@@ -1,18 +1,21 @@
 ---
 
-
-
-
-
 # $PATH is "/sbin:/bin:/usr/sbin:/usr/bin" on CentOS-7
 - name: "configure the supervisor"
-  shell: |
-    echo /usr/local/bin/wp user update 1  --user_pass="{{
+  shell:
+    cmd: |
+      echo /usr/local/bin/wp user update 1  --user_pass="{{
 
-            lookup('password',
-        '~/ansible/store/wp_supervisor/wordpress/wp_super_pass chars=ascii_letters')
+              lookup('password',
+          '~/ansible/store/wp_supervisor/wordpress/wp_super_pass chars=ascii_letters')
 
-            }}" --path="{{ web_docroot }}" --allow-root
+              }}" --path="{{ web_docroot }}" --allow-root
 
-    /usr/local/bin/wp user update 1  --user_pass="{{ lookup('password',
-    '~/ansible/store/wp_supervisor/wordpress/wp_super_pass chars=ascii_letters') }}" --path="{{ web_docroot }}" --allow-root --skip-email
+      /usr/local/bin/wp user update 1  --user_pass="{{ lookup('password',
+      '~/ansible/store/wp_supervisor/wordpress/wp_super_pass chars=ascii_letters') }}" --path="{{ web_docroot }}" --allow-root --skip-email
+
+      echo $?
+
+  register: wp_configure_supervisor
+  # changed_when: '"Theme already installed" not in wp_theme_install.stdout'
+  changed_when: false

@@ -34,20 +34,20 @@
     set_fact:
       web_docroot: '{{ wp_site_local.web_docroot | default( "/var/www/"+wp_site_safe ) }}'
 
-
-  - set_fact:
+  - name: set the over ride wp_hostname
+    set_fact:
       wp_hostname: "{% if wp_host_override is defined %}{{ wp_host_override }}{% else %}{{ url_parsed.hostname }}{% endif %}{% if wp_port_override is defined %}:{{ wp_port_override }}{% endif %}"
 
-  - set_fact:
+  - name: set the web_servername to the value parsed from the url
+    set_fact:
       web_servername: "{{ url_parsed.hostname }}"
 
-  - set_fact:
+  - name: set the serveraliasa, user, group and configure_apache vars
+    set_fact:
       web_serveraliases: [ "www.{{ web_servername }}", "{{ ansible_hostname }}.testing.{{ web_servername }}" ]
       webserver_user: "{{ wp_site_local.webserver_user | default( webserver_user ) }}"
       webserver_group: "{{ wp_site_local.webserver_group | default( webserver_group ) }}"
       configure_apache: "{{ wp_site_local.configure_apache | default( True ) }}"
-
-
 
   - name: create a list of dict of attributes which are used in testing
     set_fact:
@@ -69,6 +69,7 @@
       state: directory
       owner: "{{ webserver_user }}"
       group: "{{ webserver_group }}"
+    changed_when: false
 
   # maybe add a parameter for enabling rewriting??
   # doing this with a template as selinux prevents httpd writing
@@ -79,16 +80,16 @@
       owner: root
       group: root
       mode: 0644
+    changed_when: false
 
   # the installer seems to need the wp-config.php template to exist...
   - name: wp-config.php template
     template:
       src: wp-config.php.j2
       dest: "{{ web_docroot }}/wp-config.php"
-      owner: root
-      group: root
-      mode: 0644
-    become: true
+      # owner: root
+      # group: root
+      # mode: 0644
 
   #    ___           _        _ _  __        ______
   #   |_ _|_ __  ___| |_ __ _| | | \ \      / /  _ \
@@ -122,5 +123,5 @@
       state: present
     when: "write_hosts_file is defined"
 
-  # - fail:
-  #     msg: "{{ ansible_default_ipv4.address }} {{ url_parsed.hostname }}"
+    # - fail:
+    #     msg: "{{ ansible_default_ipv4.address }} {{ url_parsed.hostname }}"

@@ -1,3 +1,4 @@
+Master branch: [![Build Status](https://travis-ci.org/limepepper/ansible-role-wordpress.svg?branch=master)](https://travis-ci.org/limepepper/ansible-role-wordpress)
 
 Wordpress
 =========

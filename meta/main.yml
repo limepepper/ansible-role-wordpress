@@ -18,14 +18,7 @@ galaxy_info:
   platforms:
     - name: Ubuntu
       versions:
-        - 16.04
-  #   - 25
-  # - name: SomePlatform
-  #   versions:
-  #   - all
-  #   - 1.0
-  #   - 7
-  #   - 99.99
+        - xenial
 
   galaxy_tags:
     - web
@@ -35,3 +28,5 @@ galaxy_info:
     - hosting
 
 dependencies: []
+# - src: git+https://github.com/limepepper/ansible-role-apache.git
+# - src: git+https://github.com/limepepper/ansible-role-mysql.git

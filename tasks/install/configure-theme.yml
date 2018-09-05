@@ -20,15 +20,14 @@
   with_items: "{{ wp_site_local.themes }}"
   loop_control:
     loop_var: wp_site_theme
-  when:  wp_site_local.themes is defined and wp_site_local.themes
+  when: wp_site_local.themes is defined and wp_site_local.themes
   register: wp_themes_install
-  changed_when: '"Success: Theme already installed." not in wp_themes_install.stdout'
+  changed_when: '"Theme already installed." not in wp_themes_install.stdout'
 
 - name: "install theme for {{ wp_site }}"
   shell: |
     /usr/local/bin/wp theme install {{ wp_site_local.theme }} --path="{{ web_docroot }}"  --allow-root
     /usr/local/bin/wp theme activate {{  wp_site_local.theme }} --path="{{ web_docroot }}"  --allow-root
-  when:  wp_site_local.theme is defined and wp_site_local.theme
+  when: wp_site_local.theme is defined and wp_site_local.theme
   register: wp_theme_install
-  changed_when: '"Success: Theme already updated" not in wp_theme_install.stdout'
-
+  changed_when: '"Theme already installed" not in wp_theme_install.stdout'

@@ -1,3 +1,4 @@
+---
 
 #                              _
 #    _ __ ___  _   _ ___  __ _| |
@@ -11,7 +12,8 @@
     name: "{{ wp_db_name }}"
     state: present
 
-- mysql_user:
+- name: create the wp_db_user account for wordpress
+  mysql_user:
     name: "{{ wp_db_user }}"
     password: "{{ wp_db_pass }}"
     encrypted: no

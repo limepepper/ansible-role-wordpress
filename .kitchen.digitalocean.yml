@@ -12,9 +12,9 @@ transport:
   ssh_key: ~/.ssh/id_rsa.do-buildbot
 
 platforms:
-  #- name: debian-8
+  # - name: debian-8
   - name: debian-9
-  #- name: ubuntu-14
+  # - name: ubuntu-14
   - name: ubuntu-16
   - name: ubuntu-18
   - name: centos-7
@@ -36,12 +36,16 @@ platforms:
 
 suites:
   - name: default
+    verifier:
+      inspec_tests:
+        - ../limepepper.apache/test/integration/default
+        - ../limepepper.mysql/test/integration/default
     provisioner:
       show_command_output: true
       extra_vars:
-        webserver_options:
-          - mod-php
-          - virtualhost
+        apache_opts:
+          - php/mod_php
+          - rewrite
         tk_dep_roles:
           - limepepper.mysql
           - limepepper.apache
@@ -62,8 +66,6 @@ suites:
             plugins:
               - dark-mode
 
-          # - url: http://mywordpressblog5.com/some_sub_dir
-          #   install_path:
   - name: wordpress-certbot
     provisioner:
       playbook: tests/test-wordpress-certbot.yml

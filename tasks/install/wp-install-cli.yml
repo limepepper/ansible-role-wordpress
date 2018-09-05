@@ -1,8 +1,7 @@
 ---
 
-- tags: [ wordpress ]
+- tags: [ wordpress, wordpress-cli ]
   block:
-
 
     #                              _ _
     #   __      ___ __         ___| (_)
@@ -35,38 +34,67 @@
     - debug:
         var: webserver_user_registered
 
-    - file:
+    - name: create the .wp-cli directory, as apache_user doesn't own /var/www
+      file:
         name: "{{ webserver_user_registered.home }}/.wp-cli"
         state: directory
         owner: "{{ webserver_user }}"
         group: "{{ webserver_user }}"
 
-    - name: "install wordpress => {{ web_docroot }}"
-      shell: |
-        if [ -d "{{ web_docroot }}" ]; then
-          cd "{{ web_docroot }}"
-          if [ ! -d "{{ web_docroot }}/wp-admin" ]; then
-            echo Downloading core
-            /usr/local/bin/wp core download  --allow-root
+    - name: check whether the wordpress has already been installed
+      shell:
+        cmd: |
+          /usr/local/bin/wp core is-installed --allow-root --path="{{ web_docroot }}"
+
+          retcode=$?
+
+          if [ $retcode -eq 1 ]; then
+            echo "not-installed"
+          elif [ $retcode -eq 0 ]; then
+            echo "is-installed"
+          else
+            echo "There was some other error AND assuming not-installed"
           fi
 
-          # try that again...
-          if [ -d "{{ web_docroot }}/wp-admin" ]; then
-            if /usr/local/bin/wp core is-installed --allow-root ; then
-              echo "core is-installed ALREADY";
-            else
-              /usr/local/bin/wp core install --url={{ wp_hostname }} --title="{{ wp_title |default( wp_hostname)  }} Wordpress" --admin_user=supervisor --admin_password=stroccsngpadssword --admin_email=info@example.com --allow-root
+      changed_when: "'is-installed' not in wp_is_install.stdout"
+      register: wp_is_install
+
+    - name: "install wordpress => {{ web_docroot }}"
+      shell:
+        cmd: |
+          if [ -d "{{ web_docroot }}" ]; then
+            echo "doc root exists ({{ web_docroot }})"
+            cd "{{ web_docroot }}"
+
+            if [ ! -d "{{ web_docroot }}/wp-admin" ]; then
+              echo "wp-admin not exists ({{ web_docroot }}/wp-admin)"
+              echo Downloading core
+              /usr/local/bin/wp core download  --allow-root || exit $?
+              echo $?
+            fi
+
+            # try that again...
+            if [ -d "{{ web_docroot }}/wp-admin" ]; then
+              echo "wp-admin exists ({{ web_docroot }}/wp-admin)"
+              if /usr/local/bin/wp core is-installed --allow-root ; then
+                echo "core is-installed ALREADY";
+              else
+                echo "installing CORE to {{ web_docroot }}";
+                /usr/local/bin/wp core install --url={{ wp_hostname }} --title="{{ wp_title |default( wp_hostname)  }} Wordpress" --admin_user=supervisor --admin_password=stroccsngpadssword --admin_email=info@example.com --allow-root || exit $?
+              fi
             fi
           fi
-        fi
+          echo $?
+        # creates:
       # args:
       #   chdir: /var/www/
-      register: stdout
+      register: wp_install
+      changed_when: "'WordPress installed successfully' in wp_install.stdout"
+      when: wp_is_install.changed
+
 
     - name: debug output
-      debug: msg={{ stdout }}
-    #curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+      debug: msg={{ wp_install }}
+      # curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 
-    #wp core install --url=example.com --title=Example --admin_user=supervisor --admin_password=strongpassword --admin_email=info@example.com
-
-
+      # wp core install --url=example.com --title=Example --admin_user=supervisor --admin_password=strongpassword --admin_email=info@example.com

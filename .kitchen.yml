@@ -48,10 +48,10 @@ verifier:
   # output: reports/limepepper.foreman/%{platform}_%{suite}_inspec.json
   # format: progress
   # inspec_tests:
-    # - tests/inspec/default
-    # - name: test-wordpress
-    #   path: tests/inspec/default
-    # - path: ../limepepper.mysql/tests/integration/inspec
+  #   - tests/inspec/default
+  #   - name: test-wordpress
+  #     path: tests/inspec/default
+  #   - path: ../limepepper.mysql/tests/integration/inspec
   attributes:
     skiplist:
       - mysql-skip-this

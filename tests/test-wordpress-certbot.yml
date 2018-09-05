@@ -50,7 +50,7 @@
               - ssl/mod_ssl
               - rewrite
           tags: always
-            # apache_suite: rh-php56
+          # apache_suite: rh-php56
 
         - import_role:
             # set mysql_profile to control mysql flavor and version
@@ -100,7 +100,7 @@
           changed_when: "'failed' in conftest_check.stdout"
 
         - fail:
-            msg:  |
+            msg: |
               output of things
               vhost_template_conf: {{ vhost_template_conf }}
               conftest_check: {{ conftest_check }}
@@ -153,21 +153,21 @@
             - reload apache
 
 
-  # - name: install wordpress (biohackspace)
-  #   include_role:
-  #     name: limepepper.wordpress
-  #   vars:
-  #     wp_site:
-  #       web_docroot: /var/www/www.biohackspace.org/html
-  #       url: https://biohackspace.org
-  #       wp_db_name: db140953_biohackspace
-  #       wp_db_pass: Olm7HHtd
-  #       wp_db_user: 1clk_wp_vZ8hbp1
-  #       webserver_user: root
-  #       plugins:
-  #         - check-email
-  #       configure_apache: false
-  #   tags: always
+        # - name: install wordpress (biohackspace)
+        #   include_role:
+        #     name: limepepper.wordpress
+        #   vars:
+        #     wp_site:
+        #       web_docroot: /var/www/www.biohackspace.org/html
+        #       url: https://biohackspace.org
+        #       wp_db_name: db140953_biohackspace
+        #       wp_db_pass: Olm7HHtd
+        #       wp_db_user: 1clk_wp_vZ8hbp1
+        #       webserver_user: root
+        #       plugins:
+        #         - check-email
+        #       configure_apache: false
+        #   tags: always
 
         - name: import the wordpress role
           import_role:
