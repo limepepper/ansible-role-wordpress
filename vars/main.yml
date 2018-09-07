@@ -1,0 +1,8 @@
+---
+# vars file for limepepper.wordpress
+
+wp_db_host: localhost
+wp_strategy_install: cli
+wp_strategy_webserver: apache
+wp_vars_main_processed: true
+wp_plugins: []

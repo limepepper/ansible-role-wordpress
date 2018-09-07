@@ -1,0 +1,6 @@
+---
+
+webserver_user: apache
+webserver_group: apache
+
+apache_service: httpd

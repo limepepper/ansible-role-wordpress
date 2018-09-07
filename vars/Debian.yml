@@ -1,0 +1,8 @@
+---
+
+webserver_user: www-data
+webserver_group: www-data
+
+# apache_apachectl: /usr/sbin/apachectl
+
+apache_service: apache2
