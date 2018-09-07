@@ -99,7 +99,7 @@
   #
 
   - name: "install {{ wp_site_local.site }} wordpress by {{ wp_strategy_install }}"
-    include_tasks: "wp-install-{{ wp_strategy_install }}.yml"
+    include_tasks: "wp-install-{{ wp_strategy_install }}-site.yml"
     vars:
       site: "{{ wp_hostname }}"
 

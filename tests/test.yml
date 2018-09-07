@@ -22,12 +22,18 @@
         - debug:
             var: tk_dep_roles
 
-        - name: include any roles that are specified in the test-kitchen suite
-          include_role:
-            name: "{{ tk_dep_roles_item }}"
-          loop_control:
-            loop_var: tk_dep_roles_item
-          with_items: "{{ tk_dep_roles }}"
+        - import_role:
+            # set mysql_profile to control mysql flavor and version
+            name: limepepper.mysql
+
+        - import_role:
+            # set apache_profile to override default packages
+            name: limepepper.apache
+          vars:
+            apache_opts:
+              - php/mod_php
+              - ssl/mod_ssl
+              - rewrite
 
         - name: import the role limepepper.wordpress in test.yml playbook
           import_role:
