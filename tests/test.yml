@@ -20,7 +20,7 @@
 
     - block:
         - debug:
-            var: tk_dep_roles
+            var: apache_profile
 
         - import_role:
             # set mysql_profile to control mysql flavor and version
